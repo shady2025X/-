@@ -658,12 +658,7 @@
                 <!-- Dynamic Questions Added Here -->
             </div>
 
-            <div class="flex gap-2 mb-6">
-                <button onclick="addQuestionUI()" class="flex-1 py-2 border-2 border-dashed border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/10">+ إضافة سؤال يدوياً</button>
-                <button id="btn-generate-ai" onclick="generateQuestionsWithAI()" class="flex-1 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg shadow-lg flex items-center justify-center gap-2">
-                    <i class="fas fa-magic"></i> ✨ توليد أسئلة تلقائياً
-                </button>
-            </div>
+            <button onclick="addQuestionUI()" class="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/10 mb-6">+ إضافة سؤال</button>
 
             <div class="flex justify-end gap-2 border-t border-white/10 pt-4">
                 <button onclick="closeModal('create-exam-modal')" class="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
@@ -963,10 +958,9 @@
         }
 
         window.deleteUser = async (uid) => {
-            if(confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
-                await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', uid));
-                loadAllStudents();
-            }
+            // Removed confirm
+            await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', uid));
+            loadAllStudents();
         };
 
         // --- CONTENT MANAGEMENT (Subjects) ---
@@ -1054,6 +1048,7 @@
             
             if (docSnap.exists() && docSnap.data().url) {
                 const url = docSnap.data().url;
+                // document.getElementById('admin-schedule-url').value = url; // Removed URL input
                 preview.src = url;
                 preview.classList.remove('hidden');
                 placeholder.classList.add('hidden');
@@ -1383,66 +1378,6 @@
             
             renderQuestionsUI();
             window.openModal('create-exam-modal');
-        };
-
-        // --- GEMINI AI INTEGRATION FOR QUIZ GENERATION ---
-        window.generateQuestionsWithAI = async () => {
-            const subjectName = document.getElementById('view-subject-title').innerText;
-            const examTitle = document.getElementById('new-exam-title').value;
-            
-            if (!examTitle) return alert("يرجى كتابة عنوان الامتحان أولاً لتوليد أسئلة مناسبة.");
-
-            const btn = document.getElementById('btn-generate-ai');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
-
-            const prompt = `
-            قم بإنشاء 5 أسئلة اختبار (اختيار من متعدد) باللغة العربية لطلاب كلية علوم الرياضة.
-            المادة: ${subjectName}
-            موضوع الامتحان: ${examTitle}
-            
-            يجب أن تكون المخرجات مصفوفة JSON فقط (بدون markdown أو أي نص إضافي) بالتنسيق التالي بدقة:
-            [
-              {
-                "text": "نص السؤال هنا",
-                "type": "mcq",
-                "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
-                "correctAnswer": 0
-              }
-            ]
-            حيث correctAnswer هو رقم الإجابة الصحيحة (0, 1, 2, أو 3).
-            `;
-            
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-
-                if (!response.ok) throw new Error('AI Error');
-                const data = await response.json();
-                let text = data.candidates[0].content.parts[0].text;
-                
-                // Cleanup json markdown if present
-                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                
-                const questions = JSON.parse(text);
-                if(Array.isArray(questions)) {
-                    tempQuestions = questions;
-                    renderQuestionsUI();
-                } else {
-                    alert('لم يتمكن الذكاء الاصطناعي من توليد تنسيق صحيح. حاول مرة أخرى.');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('حدث خطأ أثناء التوليد. تأكد من الاتصال بالإنترنت.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
         };
 
         window.addQuestionUI = () => {
@@ -1775,10 +1710,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{ text: fullPrompt }]
-                        }],
-                         systemInstruction: {
-                            parts: [{ text: "أنت مساعد ذكي مفيد لمنصة تعليمية." }]
-                         }
+                        }]
                     })
                 });
 
