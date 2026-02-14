@@ -198,7 +198,13 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span id="user-display-name" class="hidden md:block text-sm text-gray-300"></span>
+                    <!-- User Profile Button -->
+                    <button onclick="openProfileModal()" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                        <i class="fas fa-user-circle text-xl"></i>
+                        <span id="user-display-name" class="hidden md:block text-sm font-bold"></span>
+                        <i class="fas fa-cog text-xs text-emerald-400"></i>
+                    </button>
+                    
                     <button onclick="logout()" class="text-red-400 hover:text-red-300 transition-colors">
                         <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
@@ -593,6 +599,38 @@
             </div>
         </div>
 
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="hidden fixed inset-0 z-[80] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel w-full max-w-md p-6 rounded-2xl relative border border-white/10">
+                <button onclick="closeModal('profile-modal')" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 bg-emerald-600 rounded-full mx-auto flex items-center justify-center text-3xl text-white mb-2 shadow-lg">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">إعدادات الحساب</h3>
+                    <p class="text-emerald-400 text-sm" id="profile-role-badge">طالب</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">الاسم</label>
+                        <input type="text" id="profile-name" class="w-full custom-input rounded-lg px-4 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">البريد الإلكتروني <span id="email-edit-hint" class="text-xs text-gray-500">(للمشرف فقط)</span></label>
+                        <input type="email" id="profile-email" class="w-full custom-input rounded-lg px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    </div>
+                    <div class="pt-2 border-t border-white/10">
+                        <label class="block text-sm text-gray-400 mb-1">تغيير كلمة المرور (اختياري)</label>
+                        <input type="password" id="profile-new-pass" placeholder="كلمة المرور الجديدة" class="w-full custom-input rounded-lg px-4 py-2 mb-2">
+                        <input type="password" id="profile-confirm-pass" placeholder="تأكيد كلمة المرور" class="w-full custom-input rounded-lg px-4 py-2">
+                    </div>
+                    
+                    <button onclick="handleUpdateProfile()" class="w-full btn-primary py-3 rounded-xl font-bold text-white mt-4 shadow-lg hover:scale-105 transition-transform">حفظ التغييرات</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Modals -->
@@ -670,7 +708,7 @@
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -879,6 +917,88 @@
             // Only hide exam specific parts if NOT entering exam
             if (viewName !== 'exam') {
                 document.getElementById('exam-interface').classList.add('hidden');
+            }
+        }
+
+        // --- PROFILE SETTINGS ---
+
+        window.openProfileModal = () => {
+            document.getElementById('profile-name').value = userData.name;
+            const emailInput = document.getElementById('profile-email');
+            emailInput.value = userData.email;
+            
+            const roleBadge = document.getElementById('profile-role-badge');
+            const emailHint = document.getElementById('email-edit-hint');
+            
+            // Enable email editing only for admin
+            if(userData.role === 'admin') {
+                emailInput.disabled = false;
+                emailInput.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                roleBadge.innerText = 'المشرف (Admin)';
+                emailHint.style.display = 'none';
+            } else {
+                emailInput.disabled = true;
+                emailInput.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                roleBadge.innerText = 'طالب';
+                emailHint.style.display = 'inline';
+            }
+            
+            document.getElementById('profile-new-pass').value = '';
+            document.getElementById('profile-confirm-pass').value = '';
+            
+            window.openModal('profile-modal');
+        }
+
+        window.handleUpdateProfile = async () => {
+            const newName = document.getElementById('profile-name').value;
+            const newEmail = document.getElementById('profile-email').value;
+            const newPass = document.getElementById('profile-new-pass').value;
+            const confirmPass = document.getElementById('profile-confirm-pass').value;
+            
+            if(!newName) return alert("الاسم مطلوب");
+            
+            try {
+                const promises = [];
+                
+                // Update Name
+                if(newName !== userData.name) {
+                    promises.push(updateProfile(currentUser, { displayName: newName }));
+                    promises.push(updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), { name: newName }));
+                     // If admin, check if email changed
+                     if(userData.role === 'admin' && newEmail !== userData.email) {
+                         promises.push(updateEmail(currentUser, newEmail));
+                         promises.push(updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), { email: newEmail }));
+                     }
+                } else if (userData.role === 'admin' && newEmail !== userData.email) {
+                     // Just email changed for admin
+                     promises.push(updateEmail(currentUser, newEmail));
+                     promises.push(updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), { email: newEmail }));
+                }
+                
+                // Update Password
+                if(newPass) {
+                    if(newPass !== confirmPass) return alert("كلمات المرور غير متطابقة");
+                    if(newPass.length < 6) return alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+                    promises.push(updatePassword(currentUser, newPass));
+                }
+                
+                await Promise.all(promises);
+                
+                // Update local state
+                userData.name = newName;
+                if(userData.role === 'admin') userData.email = newEmail;
+                document.getElementById('user-display-name').innerText = newName;
+                
+                alert("تم تحديث البيانات بنجاح");
+                closeModal('profile-modal');
+                
+            } catch(error) {
+                console.error(error);
+                if(error.code === 'auth/requires-recent-login') {
+                    alert("لأسباب أمنية، يرجى تسجيل الخروج والدخول مرة أخرى لتغيير المعلومات الحساسة.");
+                } else {
+                    alert("حدث خطأ: " + error.message);
+                }
             }
         }
 
@@ -1378,6 +1498,66 @@
             
             renderQuestionsUI();
             window.openModal('create-exam-modal');
+        };
+
+        // --- GEMINI AI INTEGRATION FOR QUIZ GENERATION ---
+        window.generateQuestionsWithAI = async () => {
+            const subjectName = document.getElementById('view-subject-title').innerText;
+            const examTitle = document.getElementById('new-exam-title').value;
+            
+            if (!examTitle) return alert("يرجى كتابة عنوان الامتحان أولاً لتوليد أسئلة مناسبة.");
+
+            const btn = document.getElementById('btn-generate-ai');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
+
+            const prompt = `
+            قم بإنشاء 5 أسئلة اختبار (اختيار من متعدد) باللغة العربية لطلاب كلية علوم الرياضة.
+            المادة: ${subjectName}
+            موضوع الامتحان: ${examTitle}
+            
+            يجب أن تكون المخرجات مصفوفة JSON فقط (بدون markdown أو أي نص إضافي) بالتنسيق التالي بدقة:
+            [
+              {
+                "text": "نص السؤال هنا",
+                "type": "mcq",
+                "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
+                "correctAnswer": 0
+              }
+            ]
+            حيث correctAnswer هو رقم الإجابة الصحيحة (0, 1, 2, أو 3).
+            `;
+            
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                if (!response.ok) throw new Error('AI Error');
+                const data = await response.json();
+                let text = data.candidates[0].content.parts[0].text;
+                
+                // Cleanup json markdown if present
+                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                
+                const questions = JSON.parse(text);
+                if(Array.isArray(questions)) {
+                    tempQuestions = questions;
+                    renderQuestionsUI();
+                } else {
+                    alert('لم يتمكن الذكاء الاصطناعي من توليد تنسيق صحيح. حاول مرة أخرى.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('حدث خطأ أثناء التوليد. تأكد من الاتصال بالإنترنت.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         };
 
         window.addQuestionUI = () => {
