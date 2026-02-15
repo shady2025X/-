@@ -402,7 +402,7 @@
                     <div id="admin-tab-schedule" class="admin-tab hidden">
                         <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-calendar-alt text-emerald-400"></i> جدول المحاضرات</h2>
                         <div class="glass-panel p-6 rounded-2xl">
-                            <p class="text-gray-400 mb-4">قم برفع صورة جدول المحاضرات. (يجب أن يكون حجم الصورة أقل من 1 ميجابايت).</p>
+                            <p class="text-gray-400 mb-4">قم برفع صورة جدول المحاضرات. (يجب أن يكون حجم الصورة أقل من 10 ميجابايت).</p>
                             <div class="flex gap-2 mb-6 items-center">
                                 <div class="flex-grow">
                                     <label for="admin-schedule-file" class="flex items-center justify-center w-full h-12 custom-input rounded-lg cursor-pointer hover:bg-white/5 transition-colors border border-dashed border-gray-600">
@@ -711,6 +711,28 @@
             </div>
         </div>
 
+        <!-- Edit Student Modal (For Admin) -->
+        <div id="edit-student-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel w-full max-w-md p-6 rounded-2xl">
+                <h3 class="text-xl font-bold mb-4">تعديل بيانات الطالب</h3>
+                <label class="text-sm text-gray-400 mb-1 block">اسم الطالب</label>
+                <input type="text" id="edit-student-name" placeholder="اسم الطالب" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
+                
+                <label class="text-sm text-gray-400 mb-1 block">كلمة المرور</label>
+                <div class="bg-slate-800/50 p-3 rounded-lg mb-4 text-sm">
+                    <p class="mb-2 text-gray-300">لتغيير كلمة مرور الطالب، يفضل إرسال رابط إعادة تعيين له عبر البريد الإلكتروني.</p>
+                    <button onclick="resetStudentPassword()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-bold">
+                        <i class="fas fa-key"></i> إرسال رابط إعادة تعيين كلمة المرور
+                    </button>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('edit-student-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
+                    <button onclick="saveStudentEdit()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">حفظ الاسم</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Firebase Scripts -->
@@ -804,6 +826,19 @@
                 views.app.classList.remove('hidden');
                 showView('auth');
                 document.getElementById('navbar').classList.add('hidden');
+                
+                // Fix: Clear chat on logout
+                const chatContainer = document.getElementById('chat-messages');
+                if(chatContainer) {
+                    chatContainer.innerHTML = `
+                    <div class="chat-ai chat-bubble">
+                        <div class="flex items-center gap-2 mb-2 text-blue-400 text-sm font-bold">
+                            <i class="fas fa-robot"></i> المساعد الذكي
+                        </div>
+                        <p>أهلاً بك! أنا مساعدك الذكي في منصة Sports Training. 🤖</p>
+                        <p class="text-sm mt-2 text-gray-300">أنا هنا لمساعدتك في أبحاثك ودراستك. يمكنك سؤالي عن أي موضوع في علوم الرياضة أو خارجها، وسأقوم بالبحث في الملفات المرفوعة وأيضاً سأجيبك من قاعدة معرفتي العامة.</p>
+                    </div>`;
+                }
             }
         });
 
@@ -1041,18 +1076,53 @@
                 reader.readAsDataURL(file);
             }
         };
-
-        const uploadImage = (file) => {
+        
+        // Intelligent Image Compression Function
+        const compressImage = (file) => {
             return new Promise((resolve, reject) => {
-                if (file.size > 1048487) {
-                    reject('حجم الصورة كبير جداً. الحد الأقصى 1 ميجابايت.');
-                    return;
-                }
                 const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(e);
                 reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxHeight = 1000;
+                        const maxWidth = 1000;
+
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Compress to JPEG with 0.7 quality
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = (error) => reject(error);
+                };
+                reader.onerror = (error) => reject(error);
             });
+        };
+
+        const uploadImage = async (file) => {
+             if (file.size > 10 * 1024 * 1024) { // 10MB
+                throw new Error('حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت.');
+            }
+            return await compressImage(file);
         };
 
         window.openEditAdmin = () => {
@@ -1127,11 +1197,16 @@
                     const navPic = document.getElementById('nav-profile-pic');
                     const sidePic = document.getElementById('admin-sidebar-pic');
                     const sidePlace = document.getElementById('admin-sidebar-placeholder');
-                    navPic.src = updates.profilePic;
-                    navPic.classList.remove('hidden');
-                    sidePic.src = updates.profilePic;
-                    sidePic.classList.remove('hidden');
-                    sidePlace.classList.add('hidden');
+                    
+                    if(navPic) {
+                        navPic.src = updates.profilePic;
+                        navPic.classList.remove('hidden');
+                    }
+                    if(sidePic && sidePlace) {
+                        sidePic.src = updates.profilePic;
+                        sidePic.classList.remove('hidden');
+                        sidePlace.classList.add('hidden');
+                    }
                 }
 
                 window.closeModal('edit-admin-modal');
