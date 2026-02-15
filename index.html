@@ -174,6 +174,34 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
+
+        /* Profile Image Styles */
+        .profile-img-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #10B981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+        .profile-img-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-img-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            color: #10B981;
+            font-size: 2rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -198,16 +226,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <!-- User Profile Button -->
-                    <button onclick="openProfileModal()" class="flex items-center gap-2 text-gray-300 hover:text-white transition-colors bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                        <div class="w-8 h-8 rounded-full overflow-hidden border border-emerald-500/50 relative">
-                            <img id="navbar-profile-pic" src="" class="w-full h-full object-cover hidden">
-                            <i id="navbar-profile-icon" class="fas fa-user-circle text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center bg-slate-800"></i>
-                        </div>
-                        <span id="user-display-name" class="hidden md:block text-sm font-bold"></span>
-                        <i class="fas fa-cog text-xs text-emerald-400"></i>
-                    </button>
-                    
+                    <div class="flex items-center gap-2">
+                        <img id="nav-profile-pic" src="" class="w-8 h-8 rounded-full object-cover hidden border border-emerald-500">
+                        <span id="user-display-name" class="hidden md:block text-sm text-gray-300"></span>
+                    </div>
                     <button onclick="logout()" class="text-red-400 hover:text-red-300 transition-colors">
                         <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
@@ -303,8 +325,15 @@
                 <div class="md:col-span-1">
                     <div class="glass-panel p-4 rounded-2xl sticky top-24">
                         <div class="text-center mb-6">
-                            <div class="w-16 h-16 bg-emerald-600 rounded-full mx-auto flex items-center justify-center text-2xl font-bold mb-2">S</div>
-                            <h3 class="font-bold">المشرف Shady</h3>
+                            <!-- Admin Profile Picture or Initials -->
+                            <div id="admin-sidebar-pic-container" class="profile-img-container mb-2">
+                                <img id="admin-sidebar-pic" src="" class="profile-img-preview hidden">
+                                <div id="admin-sidebar-placeholder" class="profile-img-placeholder">S</div>
+                            </div>
+                            <div class="flex items-center justify-center gap-2">
+                                <h3 class="font-bold">المشرف Shady</h3>
+                                <button onclick="openEditAdmin()" class="text-emerald-400 hover:text-white text-xs bg-slate-800 p-1 rounded-full" title="تعديل الحساب الشخصي"><i class="fas fa-cog"></i></button>
+                            </div>
                             <p class="text-xs text-emerald-400">Admin</p>
                         </div>
                         <nav class="space-y-2">
@@ -400,9 +429,12 @@
                 <div>
                     <p class="text-gray-400">اختر المادة للبدء في التدريب أو الاطلاع على المصادر</p>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                     <button onclick="openStudentSchedule()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform hover:scale-105">
                         <i class="fas fa-calendar-alt"></i> جدول المحاضرات
+                    </button>
+                    <button onclick="openStudentProfile()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform hover:scale-105 border border-white/10">
+                        <i class="fas fa-user-cog"></i> حسابي
                     </button>
                     <button onclick="openAIChat()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-transform hover:scale-105 border border-white/10">
                         <i class="fas fa-robot"></i> المساعد الذكي
@@ -601,126 +633,90 @@
                 </div>
             </div>
         </div>
-
-        <!-- Profile Modal -->
-        <div id="profile-modal" class="hidden fixed inset-0 z-[80] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="glass-panel w-full max-w-md p-6 rounded-2xl relative border border-white/10">
-                <button onclick="closeModal('profile-modal')" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
-                <div class="text-center mb-6 relative">
-                    <div class="w-24 h-24 bg-slate-800 rounded-full mx-auto mb-2 shadow-lg border-2 border-emerald-500 relative overflow-hidden group">
-                        <img id="modal-profile-preview" src="" class="w-full h-full object-cover hidden">
-                        <div id="modal-profile-icon" class="w-full h-full flex items-center justify-center text-4xl text-gray-400">
-                            <i class="fas fa-user"></i>
+        
+        <!-- Edit Admin Profile Modal (UPDATED) -->
+        <div id="edit-admin-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel w-full max-w-md p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-user-cog text-emerald-400"></i> الملف الشخصي (المشرف)</h3>
+                
+                <div class="flex justify-center mb-4">
+                    <label for="admin-profile-img-input" class="cursor-pointer group relative">
+                         <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-emerald-500 shadow-lg bg-slate-800 flex items-center justify-center">
+                            <img id="edit-admin-img-preview" src="" class="w-full h-full object-cover hidden">
+                            <i id="edit-admin-img-placeholder" class="fas fa-camera text-3xl text-gray-400"></i>
                         </div>
-                        
-                        <!-- Overlay for upload -->
-                        <label for="profile-image-upload" class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                            <i class="fas fa-camera text-white text-xl"></i>
-                        </label>
-                        <input type="file" id="profile-image-upload" accept="image/*" class="hidden" onchange="handleProfileImageSelect(this)">
-                    </div>
-                    <h3 class="text-xl font-bold text-white">إعدادات الحساب</h3>
-                    <p class="text-emerald-400 text-sm" id="profile-role-badge">طالب</p>
+                        <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-edit text-white"></i>
+                        </div>
+                        <input type="file" id="admin-profile-img-input" class="hidden" accept="image/*" onchange="previewImage(this, 'edit-admin-img-preview', 'edit-admin-img-placeholder')">
+                    </label>
+                </div>
+
+                <label class="text-sm text-gray-400 mb-1 block">الاسم</label>
+                <input type="text" id="edit-admin-name" placeholder="الاسم" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
+                
+                <label class="text-sm text-gray-400 mb-1 block">البريد الإلكتروني</label>
+                <input type="email" id="edit-admin-email" placeholder="البريد الإلكتروني" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
+                
+                <label class="text-sm text-gray-400 mb-1 block">رقم الهاتف</label>
+                <input type="tel" id="edit-admin-phone" placeholder="رقم الهاتف" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
+                
+                <label class="text-sm text-gray-400 mb-1 block">كلمة المرور الجديدة (اختياري)</label>
+                <input type="password" id="edit-admin-password" placeholder="اتركها فارغة إذا لم ترد التغيير" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
+                
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('edit-admin-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
+                    <button onclick="saveAdminProfile()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">حفظ التغييرات</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Profile Modal (UPDATED) -->
+        <div id="student-profile-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="glass-panel w-full max-w-md p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-id-card text-emerald-400"></i> بياناتي
+                </h3>
+                
+                <div class="flex justify-center mb-4">
+                    <label for="student-profile-img-input" class="cursor-pointer group relative">
+                         <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-emerald-500 shadow-lg bg-slate-800 flex items-center justify-center">
+                            <img id="edit-student-img-preview" src="" class="w-full h-full object-cover hidden">
+                            <i id="edit-student-img-placeholder" class="fas fa-camera text-3xl text-gray-400"></i>
+                        </div>
+                         <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-edit text-white"></i>
+                        </div>
+                        <input type="file" id="student-profile-img-input" class="hidden" accept="image/*" onchange="previewImage(this, 'edit-student-img-preview', 'edit-student-img-placeholder')">
+                    </label>
                 </div>
                 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">الاسم</label>
-                        <input type="text" id="profile-name" class="w-full custom-input rounded-lg px-4 py-2">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">البريد الإلكتروني <span id="email-edit-hint" class="text-xs text-gray-500">(للمشرف فقط)</span></label>
-                        <input type="email" id="profile-email" class="w-full custom-input rounded-lg px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    </div>
-                    <div class="pt-2 border-t border-white/10">
-                        <label class="block text-sm text-gray-400 mb-1">تغيير كلمة المرور (اختياري)</label>
-                        <input type="password" id="profile-new-pass" placeholder="كلمة المرور الجديدة" class="w-full custom-input rounded-lg px-4 py-2 mb-2">
-                        <input type="password" id="profile-confirm-pass" placeholder="تأكيد كلمة المرور" class="w-full custom-input rounded-lg px-4 py-2">
-                    </div>
-                    
-                    <button onclick="handleUpdateProfile()" class="w-full btn-primary py-3 rounded-xl font-bold text-white mt-4 shadow-lg hover:scale-105 transition-transform">حفظ التغييرات</button>
+                <div class="mb-4 bg-white/5 p-3 rounded-lg border border-white/5">
+                    <p class="text-xs text-gray-400">البريد الإلكتروني (للعرض فقط)</p>
+                    <p class="text-white font-mono" id="profile-email">email@example.com</p>
+                    <p class="text-xs text-gray-400 mt-2">رقم الهاتف (للعرض فقط)</p>
+                    <p class="text-white font-mono" id="profile-phone">01xxxxxxxxx</p>
+                </div>
+
+                <label class="text-sm text-gray-400 mb-1 block">الاسم</label>
+                <input type="text" id="profile-name" placeholder="اسم الطالب" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
+                
+                <label class="text-sm text-gray-400 mb-1 block">تغيير كلمة المرور (اختياري)</label>
+                <input type="password" id="profile-password" placeholder="كلمة المرور الجديدة" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
+
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('student-profile-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
+                    <button onclick="saveStudentProfile()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">حفظ التغييرات</button>
                 </div>
             </div>
         </div>
 
-    </div>
-
-    <!-- Modals -->
-    <!-- Add Subject Modal -->
-    <div id="add-subject-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-md p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">إضافة مادة جديدة</h3>
-            <input type="text" id="new-subject-name" placeholder="اسم المادة" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
-            <textarea id="new-subject-desc" placeholder="وصف المادة" class="w-full custom-input rounded-lg px-4 py-2 mb-4 h-24"></textarea>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('add-subject-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
-                <button onclick="saveSubject()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">حفظ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Subject Modal -->
-    <div id="edit-subject-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-md p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">تعديل المادة</h3>
-            <input type="text" id="edit-subject-name" placeholder="اسم المادة" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
-            <textarea id="edit-subject-desc" placeholder="وصف المادة" class="w-full custom-input rounded-lg px-4 py-2 mb-4 h-24"></textarea>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('edit-subject-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
-                <button onclick="saveEditSubject()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500">تحديث</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add File Modal -->
-    <div id="add-file-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-md p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">إضافة كتاب / ملف</h3>
-            <input type="text" id="new-file-name" placeholder="اسم الملف" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
-            <input type="url" id="new-file-link" placeholder="رابط Google Drive" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('add-file-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
-                <button onclick="saveFile()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">نشر</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit File Modal -->
-    <div id="edit-file-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-md p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">تعديل الملف</h3>
-            <input type="text" id="edit-file-name" placeholder="اسم الملف" class="w-full custom-input rounded-lg px-4 py-2 mb-3">
-            <input type="url" id="edit-file-link" placeholder="رابط Google Drive" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('edit-file-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
-                <button onclick="saveEditFile()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">تحديث</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Exam Modal -->
-    <div id="create-exam-modal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel w-full max-w-2xl p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
-            <h3 class="text-xl font-bold mb-4" id="exam-modal-title">إنشاء امتحان جديد</h3>
-            <input type="text" id="new-exam-title" placeholder="عنوان الامتحان (مثال: امتحان 2023)" class="w-full custom-input rounded-lg px-4 py-2 mb-4">
-            
-            <div id="questions-builder" class="space-y-4 mb-4">
-                <!-- Dynamic Questions Added Here -->
-            </div>
-
-            <button onclick="addQuestionUI()" class="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/10 mb-6">+ إضافة سؤال</button>
-
-            <div class="flex justify-end gap-2 border-t border-white/10 pt-4">
-                <button onclick="closeModal('create-exam-modal')" class="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">إلغاء</button>
-                <button id="save-exam-btn" onclick="saveExam()" class="px-6 py-2 rounded-lg bg-purple-600 hover:bg-purple-500">نشر الامتحان</button>
-            </div>
-        </div>
     </div>
 
     <!-- Firebase Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, updatePassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -749,6 +745,8 @@
         let editingFileId = null;
         let editingExamId = null;
         let editingSolvedQuestionId = null;
+        let editingStudentId = null;
+        let editingStudentEmail = null;
 
         // Custom Modal Actions
         let pendingAction = null;
@@ -806,19 +804,6 @@
                 views.app.classList.remove('hidden');
                 showView('auth');
                 document.getElementById('navbar').classList.add('hidden');
-                
-                // Fix: Clear chat on logout
-                const chatContainer = document.getElementById('chat-messages');
-                if(chatContainer) {
-                    chatContainer.innerHTML = `
-                    <div class="chat-ai chat-bubble">
-                        <div class="flex items-center gap-2 mb-2 text-blue-400 text-sm font-bold">
-                            <i class="fas fa-robot"></i> المساعد الذكي
-                        </div>
-                        <p>أهلاً بك! أنا مساعدك الذكي في منصة Sports Training. 🤖</p>
-                        <p class="text-sm mt-2 text-gray-300">أنا هنا لمساعدتك في أبحاثك ودراستك. يمكنك سؤالي عن أي موضوع في علوم الرياضة أو خارجها، وسأقوم بالبحث في الملفات المرفوعة وأيضاً سأجيبك من قاعدة معرفتي العامة.</p>
-                    </div>`;
-                }
             }
         });
 
@@ -828,17 +813,30 @@
             document.getElementById('navbar').classList.remove('hidden');
             document.getElementById('user-display-name').innerText = userData.name;
             
-            // Set Navbar Profile Pic
-            const navbarProfilePic = document.getElementById('navbar-profile-pic');
-            const navbarProfileIcon = document.getElementById('navbar-profile-icon');
+            // Set Navbar/Sidebar Image
+            const imgUrl = userData.profilePic;
+            const adminSidebarPic = document.getElementById('admin-sidebar-pic');
+            const adminPlaceholder = document.getElementById('admin-sidebar-placeholder');
+            const navPic = document.getElementById('nav-profile-pic');
             
-            if (userData.profilePic) {
-                navbarProfilePic.src = userData.profilePic;
-                navbarProfilePic.classList.remove('hidden');
-                navbarProfileIcon.classList.add('hidden');
+            if(imgUrl) {
+                // Update Admin Sidebar
+                if(adminSidebarPic && adminPlaceholder) {
+                    adminSidebarPic.src = imgUrl;
+                    adminSidebarPic.classList.remove('hidden');
+                    adminPlaceholder.classList.add('hidden');
+                }
+                // Update Navbar
+                if(navPic) {
+                    navPic.src = imgUrl;
+                    navPic.classList.remove('hidden');
+                }
             } else {
-                navbarProfilePic.classList.add('hidden');
-                navbarProfileIcon.classList.remove('hidden');
+                 if(adminSidebarPic && adminPlaceholder) {
+                    adminSidebarPic.classList.add('hidden');
+                    adminPlaceholder.classList.remove('hidden');
+                }
+                if(navPic) navPic.classList.add('hidden');
             }
 
             if (userData.role === 'admin') {
@@ -945,147 +943,6 @@
             }
         }
 
-        // --- PROFILE SETTINGS ---
-
-        window.openProfileModal = () => {
-            document.getElementById('profile-name').value = userData.name;
-            const emailInput = document.getElementById('profile-email');
-            emailInput.value = userData.email;
-            
-            const roleBadge = document.getElementById('profile-role-badge');
-            const emailHint = document.getElementById('email-edit-hint');
-            
-            // Load Profile Image
-            const modalPreview = document.getElementById('modal-profile-preview');
-            const modalIcon = document.getElementById('modal-profile-icon');
-            
-            if (userData.profilePic) {
-                modalPreview.src = userData.profilePic;
-                modalPreview.classList.remove('hidden');
-                modalIcon.classList.add('hidden');
-            } else {
-                modalPreview.classList.add('hidden');
-                modalIcon.classList.remove('hidden');
-            }
-            
-            // Enable email editing only for admin
-            if(userData.role === 'admin') {
-                emailInput.disabled = false;
-                emailInput.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                roleBadge.innerText = 'المشرف (Admin)';
-                emailHint.style.display = 'none';
-            } else {
-                emailInput.disabled = true;
-                emailInput.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                roleBadge.innerText = 'طالب';
-                emailHint.style.display = 'inline';
-            }
-            
-            document.getElementById('profile-new-pass').value = '';
-            document.getElementById('profile-confirm-pass').value = '';
-            
-            window.openModal('profile-modal');
-        }
-
-        window.handleProfileImageSelect = (input) => {
-            const file = input.files[0];
-            if (file) {
-                if (file.size > 500000) { // Limit size to 500KB for base64 storage
-                     alert('حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 500 كيلوبايت.');
-                     return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const preview = document.getElementById('modal-profile-preview');
-                    const icon = document.getElementById('modal-profile-icon');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    icon.classList.add('hidden');
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        window.handleUpdateProfile = async () => {
-            const newName = document.getElementById('profile-name').value;
-            const newEmail = document.getElementById('profile-email').value;
-            const newPass = document.getElementById('profile-new-pass').value;
-            const confirmPass = document.getElementById('profile-confirm-pass').value;
-            
-            const fileInput = document.getElementById('profile-image-upload');
-            const file = fileInput.files[0];
-            
-            if(!newName) return alert("الاسم مطلوب");
-            
-            try {
-                const promises = [];
-                const updates = {};
-                
-                // Handle Image Upload
-                if (file) {
-                    const reader = new FileReader();
-                    const base64Promise = new Promise((resolve) => {
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.readAsDataURL(file);
-                    });
-                    const base64Image = await base64Promise;
-                    updates.profilePic = base64Image;
-                    userData.profilePic = base64Image; // Update local
-                }
-
-                // Update Name
-                if(newName !== userData.name) {
-                    promises.push(updateProfile(currentUser, { displayName: newName }));
-                    updates.name = newName;
-                } 
-                
-                // Update Email (Admin Only)
-                if (userData.role === 'admin' && newEmail !== userData.email) {
-                     promises.push(updateEmail(currentUser, newEmail));
-                     updates.email = newEmail;
-                }
-                
-                // Update Password
-                if(newPass) {
-                    if(newPass !== confirmPass) return alert("كلمات المرور غير متطابقة");
-                    if(newPass.length < 6) return alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
-                    promises.push(updatePassword(currentUser, newPass));
-                }
-                
-                // Execute Auth Updates
-                await Promise.all(promises);
-                
-                // Execute Firestore Update if needed
-                if (Object.keys(updates).length > 0) {
-                     await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), updates);
-                     
-                     // Update local data
-                     userData = { ...userData, ...updates };
-                     document.getElementById('user-display-name').innerText = userData.name;
-                     
-                     // Update Navbar Pic
-                     if(updates.profilePic) {
-                        const navbarProfilePic = document.getElementById('navbar-profile-pic');
-                        const navbarProfileIcon = document.getElementById('navbar-profile-icon');
-                        navbarProfilePic.src = updates.profilePic;
-                        navbarProfilePic.classList.remove('hidden');
-                        navbarProfileIcon.classList.add('hidden');
-                     }
-                }
-                
-                alert("تم تحديث البيانات بنجاح");
-                closeModal('profile-modal');
-                
-            } catch(error) {
-                console.error(error);
-                if(error.code === 'auth/requires-recent-login') {
-                    alert("لأسباب أمنية، يرجى تسجيل الخروج والدخول مرة أخرى لتغيير المعلومات الحساسة.");
-                } else {
-                    alert("حدث خطأ: " + error.message);
-                }
-            }
-        }
-
         // --- ADMIN FUNCTIONS ---
 
         window.switchAdminTab = (tabName) => {
@@ -1153,7 +1010,8 @@
                     <td class="p-4">${data.name}</td>
                     <td class="p-4">${data.phone}</td>
                     <td class="p-4">${data.email}</td>
-                    <td class="p-4">
+                    <td class="p-4 flex gap-2">
+                        <button onclick="openEditStudent('${doc.id}', '${data.name}', '${data.email}')" class="text-emerald-400 hover:text-emerald-300"><i class="fas fa-edit"></i></button>
                         <button onclick="deleteUser('${doc.id}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
@@ -1165,6 +1023,248 @@
             // Removed confirm
             await deleteDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', uid));
             loadAllStudents();
+        };
+
+        // --- NEW EDIT FUNCTIONS & IMAGE HANDLING ---
+
+        window.previewImage = (input, previewId, placeholderId) => {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    const placeholder = document.getElementById(placeholderId);
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    if(placeholder) placeholder.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const uploadImage = (file) => {
+            return new Promise((resolve, reject) => {
+                if (file.size > 1048487) {
+                    reject('حجم الصورة كبير جداً. الحد الأقصى 1 ميجابايت.');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
+            });
+        };
+
+        window.openEditAdmin = () => {
+            document.getElementById('edit-admin-name').value = userData.name;
+            document.getElementById('edit-admin-email').value = userData.email;
+            document.getElementById('edit-admin-phone').value = userData.phone || '';
+            document.getElementById('edit-admin-password').value = '';
+            
+            // Set image preview
+            const preview = document.getElementById('edit-admin-img-preview');
+            const placeholder = document.getElementById('edit-admin-img-placeholder');
+            if(userData.profilePic) {
+                preview.src = userData.profilePic;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+
+            window.openModal('edit-admin-modal');
+        };
+
+        window.saveAdminProfile = async () => {
+            const newName = document.getElementById('edit-admin-name').value;
+            const newEmail = document.getElementById('edit-admin-email').value;
+            const newPhone = document.getElementById('edit-admin-phone').value;
+            const newPassword = document.getElementById('edit-admin-password').value;
+            const fileInput = document.getElementById('admin-profile-img-input');
+            const file = fileInput.files[0];
+
+            if(!newName || !newEmail) return alert("الاسم والبريد مطلوبان");
+
+            try {
+                let updates = { name: newName, email: newEmail, phone: newPhone };
+                let authUpdates = [];
+
+                // Handle Image
+                if (file) {
+                    try {
+                        const base64Img = await uploadImage(file);
+                        updates.profilePic = base64Img;
+                    } catch (err) {
+                        return alert(err);
+                    }
+                }
+
+                // Update Auth Profile
+                if (newName !== userData.name) {
+                    authUpdates.push(updateProfile(auth.currentUser, { displayName: newName }));
+                }
+
+                // Note: Updating Email in Auth usually requires recent login/verification. 
+                // We update Firestore data primarily.
+
+                // Update Password
+                if (newPassword) {
+                    authUpdates.push(updatePassword(auth.currentUser, newPassword));
+                }
+
+                if(authUpdates.length > 0) await Promise.all(authUpdates);
+
+                // Update Firestore
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), updates);
+
+                // Update Local State
+                Object.assign(userData, updates);
+                
+                // Update UI immediately
+                document.getElementById('user-display-name').innerText = newName;
+                if(updates.profilePic) {
+                    const navPic = document.getElementById('nav-profile-pic');
+                    const sidePic = document.getElementById('admin-sidebar-pic');
+                    const sidePlace = document.getElementById('admin-sidebar-placeholder');
+                    navPic.src = updates.profilePic;
+                    navPic.classList.remove('hidden');
+                    sidePic.src = updates.profilePic;
+                    sidePic.classList.remove('hidden');
+                    sidePlace.classList.add('hidden');
+                }
+
+                window.closeModal('edit-admin-modal');
+                alert("تم تحديث البيانات بنجاح");
+                
+                if(newPassword) {
+                    alert("تم تغيير كلمة المرور. يرجى تسجيل الدخول مرة أخرى.");
+                    window.logout();
+                }
+
+            } catch (error) {
+                console.error(error);
+                if(error.code === 'auth/requires-recent-login') {
+                    alert("لإجراء تغييرات حساسة (مثل كلمة المرور)، يرجى تسجيل الخروج والدخول مجدداً.");
+                } else {
+                    alert("حدث خطأ أثناء التحديث.");
+                }
+            }
+        };
+
+        window.openEditStudent = (id, name, email) => {
+            editingStudentId = id;
+            editingStudentEmail = email;
+            document.getElementById('edit-student-name').value = name;
+            window.openModal('edit-student-modal');
+        };
+
+        window.saveStudentEdit = async () => {
+            const newName = document.getElementById('edit-student-name').value;
+            if(!newName) return;
+
+            await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', editingStudentId), {
+                name: newName
+            });
+            window.closeModal('edit-student-modal');
+            loadAllStudents();
+        };
+
+        window.resetStudentPassword = async () => {
+            if(!editingStudentEmail) return alert("البريد الإلكتروني غير متوفر");
+            try {
+                await sendPasswordResetEmail(auth, editingStudentEmail);
+                alert(`تم إرسال رابط إعادة تعيين كلمة المرور إلى ${editingStudentEmail}`);
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء إرسال البريد.");
+            }
+        };
+
+        window.openStudentProfile = () => {
+            document.getElementById('profile-email').innerText = userData.email;
+            document.getElementById('profile-phone').innerText = userData.phone || 'غير مسجل';
+            document.getElementById('profile-name').value = userData.name;
+            document.getElementById('profile-password').value = '';
+            
+            // Set image preview
+            const preview = document.getElementById('edit-student-img-preview');
+            const placeholder = document.getElementById('edit-student-img-placeholder');
+            if(userData.profilePic) {
+                preview.src = userData.profilePic;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                preview.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+
+            window.openModal('student-profile-modal');
+        };
+
+        window.saveStudentProfile = async () => {
+            const newName = document.getElementById('profile-name').value;
+            const newPassword = document.getElementById('profile-password').value;
+            const fileInput = document.getElementById('student-profile-img-input');
+            const file = fileInput.files[0];
+
+            if(!newName) return alert("الاسم مطلوب");
+
+            try {
+                let updates = { name: newName };
+                const authUpdates = [];
+
+                if (file) {
+                    try {
+                        const base64Img = await uploadImage(file);
+                        updates.profilePic = base64Img;
+                    } catch (err) {
+                        return alert(err);
+                    }
+                }
+
+                // Update Name if changed
+                if (newName !== userData.name) {
+                    authUpdates.push(updateProfile(auth.currentUser, { displayName: newName }));
+                }
+                
+                // Update Password if provided
+                if (newPassword) {
+                    authUpdates.push(updatePassword(auth.currentUser, newPassword));
+                }
+
+                if(authUpdates.length > 0) await Promise.all(authUpdates);
+                
+                // Update Firestore
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUser.uid), updates);
+                
+                // Update local data
+                Object.assign(userData, updates);
+
+                // Update UI
+                document.getElementById('user-display-name').innerText = newName;
+                if(updates.profilePic) {
+                    const navPic = document.getElementById('nav-profile-pic');
+                    navPic.src = updates.profilePic;
+                    navPic.classList.remove('hidden');
+                }
+
+                window.closeModal('student-profile-modal');
+                alert("تم تحديث البيانات بنجاح");
+
+                if(newPassword) {
+                    alert("تم تغيير كلمة المرور. يرجى تسجيل الدخول مجدداً.");
+                    window.logout();
+                }
+
+            } catch (error) {
+                console.error(error);
+                if(error.code === 'auth/requires-recent-login') {
+                    alert("لتغيير كلمة المرور، يرجى تسجيل الخروج والدخول مجدداً للمحاولة.");
+                } else {
+                    alert("حدث خطأ أثناء التحديث: " + error.message);
+                }
+            }
         };
 
         // --- CONTENT MANAGEMENT (Subjects) ---
@@ -1584,66 +1684,6 @@
             window.openModal('create-exam-modal');
         };
 
-        // --- GEMINI AI INTEGRATION FOR QUIZ GENERATION ---
-        window.generateQuestionsWithAI = async () => {
-            const subjectName = document.getElementById('view-subject-title').innerText;
-            const examTitle = document.getElementById('new-exam-title').value;
-            
-            if (!examTitle) return alert("يرجى كتابة عنوان الامتحان أولاً لتوليد أسئلة مناسبة.");
-
-            const btn = document.getElementById('btn-generate-ai');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
-
-            const prompt = `
-            قم بإنشاء 5 أسئلة اختبار (اختيار من متعدد) باللغة العربية لطلاب كلية علوم الرياضة.
-            المادة: ${subjectName}
-            موضوع الامتحان: ${examTitle}
-            
-            يجب أن تكون المخرجات مصفوفة JSON فقط (بدون markdown أو أي نص إضافي) بالتنسيق التالي بدقة:
-            [
-              {
-                "text": "نص السؤال هنا",
-                "type": "mcq",
-                "options": ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
-                "correctAnswer": 0
-              }
-            ]
-            حيث correctAnswer هو رقم الإجابة الصحيحة (0, 1, 2, أو 3).
-            `;
-            
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-
-                if (!response.ok) throw new Error('AI Error');
-                const data = await response.json();
-                let text = data.candidates[0].content.parts[0].text;
-                
-                // Cleanup json markdown if present
-                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                
-                const questions = JSON.parse(text);
-                if(Array.isArray(questions)) {
-                    tempQuestions = questions;
-                    renderQuestionsUI();
-                } else {
-                    alert('لم يتمكن الذكاء الاصطناعي من توليد تنسيق صحيح. حاول مرة أخرى.');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('حدث خطأ أثناء التوليد. تأكد من الاتصال بالإنترنت.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        };
-
         window.addQuestionUI = () => {
             tempQuestions.push({
                 text: "",
@@ -1974,10 +2014,7 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{ text: fullPrompt }]
-                        }],
-                         systemInstruction: {
-                            parts: [{ text: "أنت مساعد ذكي مفيد لمنصة تعليمية." }]
-                         }
+                        }]
                     })
                 });
 
